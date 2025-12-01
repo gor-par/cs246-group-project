@@ -155,3 +155,58 @@ class Board:
 
     def is_valid_cell_coordinate(self, x, y):
         return x >= 0 and x < self.width and y >= 0 and y < self.height
+
+
+# Example programmatic game
+
+# m = Minesweeper()
+# m.start_new_game(10, 10, 9, 1)
+# print(m.current_state)
+# print(m.reveal_cell(2, 2))
+
+# print(m.current_state["board"])
+# print(m.reveal_cell(7, 6))
+# print(m.reveal_cell(8, 6))
+
+# print(m.current_state["board"])
+# print(m.reveal_cell(9, 1))
+# print(m.flag_cell(8, 1))
+# print(m.reveal_cell(9, 0))
+# print(m.flag_cell(8, 0))
+
+# print(m.current_state["board"])
+# print(m.reveal_cell(0, 3))
+# print(m.flag_cell(0, 2))
+# print(m.flag_cell(1, 4))
+# print(m.reveal_cell(0, 4))
+# print(m.current_state["board"])
+# print(m.reveal_cell(0, 5))
+# print(m.reveal_cell(1, 5))
+# print(m.current_state["board"])
+# print(m.reveal_cell(0, 6))
+# print(m.reveal_cell(1, 6))
+# print(m.flag_cell(6, 6))
+# print(m.flag_cell(9, 6))
+# print(m.flag_cell(2, 7))
+# print(m.reveal_cell(2, 8))
+# print(m.flag_cell(2, 9))
+# print(m.flag_cell(1, 8))
+# print(m.reveal_cell(0, 9))
+# print(m.reveal_cell(0, 8))
+# print(m.reveal_cell(1, 9))
+
+# print(m.current_state["board"])
+
+
+# """
+# 0, 0, 0, 0, 0, 0, 0, 2, F, 2
+# 1, 1, 0, 0, 0, 0, 0, 2, F, 2
+# F, 1, 0, 0, 0, 0, 0, 1, 1, 1
+# 2, 2, 1, 0, 0, 0, 0, 0, 0, 0
+# 1, F, 1, 0, 0, 0, 0, 0, 0, 0
+# 1, 1, 1, 0, 0, 1, 1, 1, 1, 1
+# 0, 1, 1, 1, 0, 1, F, 1, 1, F
+# 1, 2, F, 1, 0, 1, 1, 1, 1, 1
+# 1, F, 3, 2, 0, 0, 0, 0, 0, 0
+# 1, 2, F, 1, 0, 0, 0, 0, 0, 0
+# """
