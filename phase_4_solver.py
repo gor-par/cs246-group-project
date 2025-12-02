@@ -9,8 +9,7 @@ The solver:
 1. Identifies edge cells (hidden cells adjacent to revealed numbered cells)
 2. Uses tree search to find all valid mine placement configurations
 3. Calculates probabilities based on valid configurations
-4. Flags cells that are mines in all valid configurations
-5. Returns the cell with the lowest probability of being a mine
+4. Returns the cell with the lowest probability of being a mine for revealing
 """
 
 from typing import List, Tuple, Set, Dict, Optional
@@ -754,7 +753,6 @@ class Phase4Solver:
         
         Returns:
             Tuple of (action, coordinates):
-            - ("FLAG", (x, y)) if a cell should be flagged (mine in all configurations)
             - ("REVEAL", (x, y)) if a cell should be revealed (lowest mine probability or best info gain)
             - (None, None) if no action can be determined
         """
@@ -800,13 +798,20 @@ class Phase4Solver:
                 return "REVEAL", unexplored_cell
             return None, None
         
-        # Step 5: Check for cells that are mines in all configurations (probability = 1.0)
-        for cell, prob in probabilities.items():
-            if prob == 1.0:
-                return "FLAG", cell
+        # Step 5: Filter out cells with probability 1.0 (definite mines) from consideration
+        # Phase 4 solver only reveals tiles, so we skip definite mines
+        revealable_probabilities = {cell: prob for cell, prob in probabilities.items() if prob < 1.0}
+        
+        # If all edge cells are definite mines, try exploring unexplored areas
+        if not revealable_probabilities:
+            unexplored_cell = self.find_safe_unexplored_cell(remaining_mines, safe_threshold)
+            if unexplored_cell:
+                return "REVEAL", unexplored_cell
+            # If no unexplored cells, we have no choice but to return None
+            return None, None
         
         # Step 6: Check if all edge cells exceed safe threshold
-        min_edge_prob = min(probabilities.values()) if probabilities else 1.0
+        min_edge_prob = min(revealable_probabilities.values()) if revealable_probabilities else 1.0
         if min_edge_prob > safe_threshold:
             # All edge cells are too risky - explore unexplored areas instead
             unexplored_cell = self.find_safe_unexplored_cell(remaining_mines, safe_threshold)
@@ -816,15 +821,15 @@ class Phase4Solver:
         
         # Step 7: Check for equal probability case (global or sub-board)
         equal_prob_detected, isolated_component = self._find_isolated_equal_prob_component(
-            probabilities, edge_cells, constraints
+            revealable_probabilities, edge_cells, constraints
         )
         
         if equal_prob_detected:
             # If we found an isolated component, prioritize cells from that component
             if isolated_component:
                 # Pick from the isolated component (prefer info gain if enabled)
-                component_probs = {cell: probabilities[cell] 
-                                 for cell in isolated_component if cell in probabilities}
+                component_probs = {cell: revealable_probabilities[cell] 
+                                 for cell in isolated_component if cell in revealable_probabilities}
                 if use_information_gain:
                     selected_cell = self.select_cell_with_heuristic(
                         component_probs, edge_cells, constraints, 
@@ -837,16 +842,16 @@ class Phase4Solver:
                 # Global equal probability case - pick any
                 if use_information_gain:
                     selected_cell = self.select_cell_with_heuristic(
-                        probabilities, edge_cells, constraints, 
+                        revealable_probabilities, edge_cells, constraints, 
                         use_information_gain=True
                     )
                 else:
-                    selected_cell = list(probabilities.keys())[0]
+                    selected_cell = list(revealable_probabilities.keys())[0]
             return "REVEAL", selected_cell
         
         # Step 8: Select cell using probability or information gain heuristic
         selected_cell = self.select_cell_with_heuristic(
-            probabilities, edge_cells, constraints, use_information_gain=use_information_gain
+            revealable_probabilities, edge_cells, constraints, use_information_gain=use_information_gain
         )
         return "REVEAL", selected_cell
 
@@ -873,7 +878,6 @@ def solve_phase_4(board: List[List], width: int, height: int, total_mines: int,
         
     Returns:
         Tuple of (action, coordinates):
-        - ("FLAG", (x, y)) if a cell should be flagged
         - ("REVEAL", (x, y)) if a cell should be revealed
         - (None, None) if no action can be determined
     """
