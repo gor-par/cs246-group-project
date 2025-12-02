@@ -605,6 +605,68 @@ class Phase4Solver:
         
         return info_gain
     
+    def select_informative_safe_cell(self, probabilities: Dict[Tuple[int, int], float],
+                                     edge_cells: Set[Tuple[int, int]],
+                                     constraints: List[Dict],
+                                     info_gain_threshold: float = 3.0,
+                                     safety_threshold: float = 0.35) -> Optional[Tuple[int, int]]:
+        """
+        Select a cell that is both informative and relatively safe.
+        
+        This method prioritizes cells that:
+        1. Have high information gain (likely to help eliminate uncertain cases)
+        2. Are relatively safe (low probability of being a mine)
+        
+        Strategy:
+        - First, identify cells with high information gain (above threshold)
+        - Among those, find cells that are relatively safe (probability below threshold)
+        - If such cells exist, return the one with best safety/information balance
+        - Otherwise, return None to fall back to standard selection
+        
+        Args:
+            probabilities: Dictionary of cell probabilities
+            edge_cells: Set of edge cell coordinates
+            constraints: List of constraint dictionaries
+            info_gain_threshold: Minimum information gain to be considered "informative" (default 3.0)
+            safety_threshold: Maximum acceptable mine probability for "safe" cells (default 0.35)
+        
+        Returns:
+            (x, y) coordinates of selected cell, or None if no informative safe cells found
+        """
+        if not probabilities:
+            return None
+        
+        # Calculate information gain for all cells
+        cell_info_gains = {}
+        for cell in probabilities.keys():
+            info_gain = self.calculate_information_gain(cell, edge_cells, constraints)
+            cell_info_gains[cell] = info_gain
+        
+        # Find cells that are both informative and safe
+        informative_safe_cells = []
+        for cell, prob in probabilities.items():
+            info_gain = cell_info_gains[cell]
+            # Check if cell is informative (high info gain) and safe (low probability)
+            if info_gain >= info_gain_threshold and prob <= safety_threshold:
+                # Calculate a combined score: prioritize safety, but reward information
+                # Lower probability is better, higher info gain is better
+                # Score = (1 - prob) * info_gain (both normalized)
+                # This gives higher scores to cells that are both safe and informative
+                safety_score = 1.0 - prob  # Higher for safer cells
+                info_score = info_gain / 10.0  # Normalize info gain (assuming max ~10-15)
+                combined_score = safety_score * 0.6 + info_score * 0.4  # Weight safety more
+                informative_safe_cells.append((combined_score, prob, info_gain, cell))
+        
+        if not informative_safe_cells:
+            # No cells meet both criteria - return None to use standard selection
+            return None
+        
+        # Sort by combined score (higher is better), then by probability (lower is better)
+        informative_safe_cells.sort(reverse=True, key=lambda x: (x[0], -x[1]))
+        
+        # Return the best informative safe cell
+        return informative_safe_cells[0][3]
+    
     def select_cell_with_heuristic(self, probabilities: Dict[Tuple[int, int], float],
                                    edge_cells: Set[Tuple[int, int]],
                                    constraints: List[Dict],
@@ -819,7 +881,19 @@ class Phase4Solver:
                 return "REVEAL", unexplored_cell
             # If no unexplored cells, fall through to selecting best edge cell anyway
         
-        # Step 7: Check for equal probability case (global or sub-board)
+        # Step 7: Try to find informative and safe cells first
+        # This prioritizes cells that are likely to give useful information to eliminate uncertain cases
+        informative_safe_cell = self.select_informative_safe_cell(
+            revealable_probabilities, edge_cells, constraints,
+            info_gain_threshold=3.0,  # Minimum info gain to be considered informative
+            safety_threshold=safe_threshold  # Use the same safety threshold
+        )
+        
+        if informative_safe_cell:
+            # Found a cell that is both informative and safe - prioritize it
+            return "REVEAL", informative_safe_cell
+        
+        # Step 8: Check for equal probability case (global or sub-board)
         equal_prob_detected, isolated_component = self._find_isolated_equal_prob_component(
             revealable_probabilities, edge_cells, constraints
         )
@@ -849,7 +923,7 @@ class Phase4Solver:
                     selected_cell = list(revealable_probabilities.keys())[0]
             return "REVEAL", selected_cell
         
-        # Step 8: Select cell using probability or information gain heuristic
+        # Step 9: Select cell using probability or information gain heuristic
         selected_cell = self.select_cell_with_heuristic(
             revealable_probabilities, edge_cells, constraints, use_information_gain=use_information_gain
         )
