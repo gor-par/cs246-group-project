@@ -37,7 +37,7 @@ class Minesweeper:
         return {"time": elapsed_time, "board": self.current_board, "status": status}
 
     def reveal_cell(self, x: int, y: int):
-        print(x, y)
+        print("r", x, y)
         if not self.board.is_valid_cell_coordinate(x, y):
             raise ValueError("Coordinate value out of board range")
 
@@ -80,7 +80,7 @@ class Minesweeper:
         return "SUCCESS"
 
     def flag_cell(self, x, y):
-        print(x, y)
+        print("f", x, y)
         if not self.board.is_valid_cell_coordinate(x, y):
             raise ValueError("Coordinate value out of board range")
 
