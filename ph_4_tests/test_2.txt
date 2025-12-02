@@ -1,0 +1,50 @@
+============================================================
+CUSTOM BOARD TEST
+============================================================
+
+Initial Board State:
+   0  1  2  3  4
+ 0 _  _  1  0  0 
+ 1 _  _  2  1  0 
+ 2 1  2  F  1  0 
+ 3 0  1  1  1  0 
+ 4 0  0  0  0  0 
+
+Edge cells: 0
+
+Constraints: 0
+
+Remaining mines: 2
+
+No probabilities calculated (no edge cells or constraints)
+
+------------------------------------------------------------
+Phase 4 Recommendation: REVEAL at (1, 0)
+
+------------------------------------------------------------
+Phase 4 Recommendation (with info gain): REVEAL at (1, 0)
+============================================================
+CUSTOM BOARD TEST
+============================================================
+
+Initial Board State:
+   0  1  2  3  4
+ 0 _  _  1  0  0 
+ 1 _  _  2  1  0 
+ 2 1  2  F  1  0 
+ 3 0  1  1  1  0 
+ 4 0  0  0  0  0 
+
+Edge cells: 0
+
+Constraints: 0
+
+Remaining mines: 2
+
+No probabilities calculated (no edge cells or constraints)
+
+------------------------------------------------------------
+Phase 4 Recommendation: REVEAL at (1, 0)
+
+------------------------------------------------------------
+Phase 4 Recommendation (with info gain): REVEAL at (1, 0)
