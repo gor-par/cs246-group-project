@@ -43,7 +43,8 @@ class MinesweeperSolver:
           If number == flagged_neighbors:
               -> all hidden neighbors are safe -> reveal them.
 
-        Returns True if at least one cell was flagged or revealed.
+        Returns True ONLY if at least one NEW cell was flagged or revealed.
+        Returns False if no actions can be taken with 100% certainty.
         """
         state = self.game.current_state
         board = state["board"]
@@ -86,13 +87,26 @@ class MinesweeperSolver:
                 flags = len(flagged_neighbors)
                 hidden = len(hidden_neighbors)
 
+                # Validation: flags should never exceed mines_total
+                # If this happens, there's a bug elsewhere, but we should not flag more
+                if flags > mines_total:
+                    # Invalid state - more flags than mines required
+                    # This should never happen with correct logic, but skip to avoid errors
+                    continue
+
                 # ---------------- Rule A: all remaining hidden must be mines ----------------
                 # Mines still to place around this number:
                 remaining_mines = mines_total - flags
-                if remaining_mines == hidden and hidden > 0:
+                # Only flag if remaining_mines is positive and equals hidden count
+                # This ensures 100% certainty: ALL hidden neighbors MUST be mines
+                if remaining_mines == hidden and remaining_mines > 0 and hidden > 0:
                     # All hidden neighbors are mines -> flag them
                     for nx, ny in hidden_neighbors:
-                        # flag_cell will do nothing if already revealed
+                        # Check if cell is still hidden before flagging
+                        if board[ny][nx] != "_":
+                            # Cell was already revealed/flagged by previous action, skip
+                            continue
+                        # flag_cell will do nothing if already revealed, but we check above
                         res = self.game.flag_cell(nx, ny)
                         if res == "FLAG":
                             changed = True
@@ -101,8 +115,13 @@ class MinesweeperSolver:
 
                 # ---------------- Rule B: all hidden neighbors are safe ----------------
                 # If all mines already accounted for by flags -> remaining hidden are safe
+                # This ensures 100% certainty: ALL hidden neighbors MUST be safe
                 if mines_total == flags and hidden > 0:
                     for nx, ny in hidden_neighbors:
+                        # Check if cell is still hidden before revealing
+                        if board[ny][nx] != "_":
+                            # Cell was already revealed/flagged by previous action, skip
+                            continue
                         # reveal_cell will handle recursion for 0s
                         res = self.game.reveal_cell(nx, ny)
                         if res in ("SUCCESS", "REPEAT"):

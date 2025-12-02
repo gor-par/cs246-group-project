@@ -30,7 +30,7 @@ Pattern convention (from patterns.py):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any, Iterable, Set
+from typing import List, Tuple, Any, Iterable, Set, Optional
 
 
 from patterns import ALL_PATTERNS, Pattern
@@ -232,6 +232,37 @@ def suggest_moves_for_game(game) -> Tuple[Set[Cell], Set[Cell], List[PatternMatc
     state = game.current_state
     board = state["board"]
     return aggregate_deductions(board)
+
+
+def one_step_for_game(
+    game,
+) -> Tuple[Optional[PatternMatch], List[Cell], List[Cell]]:
+    """
+    Find the first pattern match that deduces something (mines or safes).
+
+    Returns:
+        (match, mines, safes) where:
+        - match: PatternMatch object if a pattern was found, None otherwise
+        - mines: list of (x, y) cells that must be mines
+        - safes: list of (x, y) cells that must be safe
+
+    This function returns only the FIRST pattern that provides deductions,
+    useful for step-by-step solving.
+    """
+    state = game.current_state
+    board = state["board"]
+    
+    # Get all pattern matches
+    matches = detect_pattern_matches(board)
+    
+    # Find the first match that has deductions
+    for match in matches:
+        if match.mines or match.safes:
+            # Return the first match with deductions
+            return match, list(match.mines), list(match.safes)
+    
+    # No pattern found that deduces anything
+    return None, [], []
 
 
 # Optional: if you want a quick CLI test

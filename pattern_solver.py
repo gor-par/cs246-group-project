@@ -81,29 +81,31 @@ def apply_one_pattern_step_to_game(game: Minesweeper) -> StepResult:
             game_status=state["status"],
         )
 
-    # 1) Flag all guaranteed mines
+    # 1) Flag all guaranteed mines (only if they're not already flagged/revealed)
     for (x, y) in mines:
         # Only try to flag if it's not already revealed as a number
         # (in your implementation, "_" or "F" are unrevealed-like states)
         cell_val = game.current_board[y][x]
         if cell_val == "F":
-            # already flagged, fine
-            flagged.append((x, y))
+            # already flagged, skip - don't count as action
             continue
         if cell_val != "_":
-            # already revealed number or something else; skip
+            # already revealed number or something else; skip - don't count as action
             continue
 
+        # Only flag if cell is actually hidden and unflagged
         game.flag_cell(x, y)
         flagged.append((x, y))
 
-    # 2) Reveal all guaranteed safe cells
+    # 2) Reveal all guaranteed safe cells (only if they're not already revealed/flagged)
     for (x, y) in safes:
         # Don't reveal flags or already revealed cells
         cell_val = game.current_board[y][x]
         if cell_val in ("F", "M") or isinstance(cell_val, int):
+            # Already flagged/revealed, skip - don't count as action
             continue
 
+        # Only reveal if cell is actually hidden
         result = game.reveal_cell(x, y)
         revealed.append((x, y))
 
@@ -111,6 +113,16 @@ def apply_one_pattern_step_to_game(game: Minesweeper) -> StepResult:
         # break early.
         if result == "DEFEAT":
             break
+
+    # If no actual actions were taken (all were already done), return no action
+    if not flagged and not revealed:
+        state = game.current_state
+        return StepResult(
+            pattern=None,  # Treat as no pattern if no actions taken
+            mines=[],
+            safes=[],
+            game_status=state["status"],
+        )
 
     state = game.current_state
     return StepResult(
