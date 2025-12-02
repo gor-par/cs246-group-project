@@ -46,6 +46,36 @@ class Phase4Solver:
         """Check if coordinates are within board bounds."""
         return 0 <= x < self.width and 0 <= y < self.height
     
+    def is_numbered_cell(self, cell) -> bool:
+        """
+        Check if a cell is a revealed numbered cell.
+        Handles both integer and string representations.
+        """
+        if isinstance(cell, int):
+            return cell > 0
+        elif isinstance(cell, str):
+            # Check if it's a string representation of a number
+            try:
+                num = int(cell)
+                return num > 0
+            except (ValueError, TypeError):
+                return False
+        return False
+    
+    def get_cell_value(self, cell) -> int:
+        """
+        Get the numeric value of a cell.
+        Handles both integer and string representations.
+        """
+        if isinstance(cell, int):
+            return cell
+        elif isinstance(cell, str):
+            try:
+                return int(cell)
+            except (ValueError, TypeError):
+                return 0
+        return 0
+    
     def get_neighbors(self, x: int, y: int) -> List[Tuple[int, int]]:
         """Get all valid neighboring coordinates."""
         neighbors = []
@@ -72,7 +102,7 @@ class Phase4Solver:
             for x in range(self.width):
                 cell = self.board[y][x]
                 # Check if this is a revealed numbered cell
-                if isinstance(cell, int) and cell > 0:
+                if self.is_numbered_cell(cell):
                     # Check all neighbors
                     for nx, ny in self.get_neighbors(x, y):
                         neighbor = self.board[ny][nx]
@@ -101,9 +131,10 @@ class Phase4Solver:
             for x in range(self.width):
                 cell = self.board[y][x]
                 # Check if this is a revealed numbered cell
-                if isinstance(cell, int) and cell > 0:
+                if self.is_numbered_cell(cell):
                     hidden_neighbors = []
                     flagged_count = 0
+                    cell_value = self.get_cell_value(cell)
                     
                     for nx, ny in self.get_neighbors(x, y):
                         neighbor = self.board[ny][nx]
@@ -121,7 +152,7 @@ class Phase4Solver:
                     if hidden_neighbors:
                         constraints.append({
                             'cell': (x, y),
-                            'value': cell,
+                            'value': cell_value,
                             'hidden_neighbors': hidden_neighbors,
                             'flagged_neighbors': flagged_count
                         })
@@ -574,7 +605,7 @@ class Phase4Solver:
                 neighbor = self.board[ny][nx]
                 if neighbor == "_":
                     hidden_neighbors.append((nx, ny))
-                elif isinstance(neighbor, int):
+                elif self.is_numbered_cell(neighbor):
                     revealed_neighbors.append((nx, ny))
         
         # Information gain factors:
@@ -604,6 +635,68 @@ class Phase4Solver:
             info_gain += edge_neighbors * 0.5
         
         return info_gain
+    
+    def find_isolated_equal_probability_case(self, 
+                                             probabilities: Dict[Tuple[int, int], float],
+                                             edge_cells: Set[Tuple[int, int]],
+                                             constraints: List[Dict]) -> Optional[Tuple[int, int]]:
+        """
+        Find isolated equal-probability cases and return a cell to reveal.
+        
+        This function specifically looks for isolated compartments where:
+        1. All cells in a connected component have equal probability
+        2. The component is isolated (no future reveals will provide more info)
+        3. This represents a 50/50 (or equal probability) guess that must be taken
+        
+        These cases should ALWAYS be prioritized because they represent inevitable
+        guesses that won't be resolved by future moves.
+        
+        Args:
+            probabilities: Dictionary of cell probabilities
+            edge_cells: Set of edge cell coordinates
+            constraints: List of constraint dictionaries
+        
+        Returns:
+            (x, y) coordinates of a cell from an isolated equal-probability component,
+            or None if no such case is found
+        """
+        if not probabilities or not edge_cells:
+            return None
+        
+        # Find connected components of edge cells
+        components = self.find_connected_components(edge_cells)
+        
+        # Check each component for isolated equal-probability case
+        for component in components:
+            if len(component) < 2:
+                continue  # Skip single-cell components (not a 50/50 case)
+            
+            # Get probabilities for this component
+            component_probs = {cell: probabilities[cell] 
+                              for cell in component if cell in probabilities}
+            
+            if not component_probs or len(component_probs) < 2:
+                continue
+            
+            # Check if all cells in this component have equal probability
+            comp_prob_values = list(component_probs.values())
+            if len(comp_prob_values) == 0:
+                continue
+            
+            first_comp_prob = comp_prob_values[0]
+            # Check if all probabilities are equal (within floating point tolerance)
+            all_equal = all(abs(p - first_comp_prob) < 1e-9 
+                           for p in comp_prob_values)
+            
+            if all_equal:
+                # Check if this component is isolated (won't get more info)
+                if self.is_component_isolated(component, constraints):
+                    # This is an isolated equal-probability case - prioritize it!
+                    # Return the first cell from this component
+                    # (all have equal probability, so any is fine)
+                    return list(component_probs.keys())[0]
+        
+        return None
     
     def select_informative_safe_cell(self, probabilities: Dict[Tuple[int, int], float],
                                      edge_cells: Set[Tuple[int, int]],
@@ -871,6 +964,17 @@ class Phase4Solver:
                 return "REVEAL", unexplored_cell
             # If no unexplored cells, we have no choice but to return None
             return None, None
+        
+        # Step 5.5: PRIORITY CHECK - Find isolated equal-probability cases (50/50 guesses)
+        # These MUST be handled immediately as they represent inevitable guesses
+        # that won't be resolved by future moves
+        isolated_equal_prob_cell = self.find_isolated_equal_probability_case(
+            revealable_probabilities, edge_cells, constraints
+        )
+        
+        if isolated_equal_prob_cell:
+            # Found an isolated equal-probability case - ALWAYS prioritize this!
+            return "REVEAL", isolated_equal_prob_cell
         
         # Step 6: Check if all edge cells exceed safe threshold
         min_edge_prob = min(revealable_probabilities.values()) if revealable_probabilities else 1.0
