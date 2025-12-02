@@ -109,8 +109,13 @@ class Phase4Solver:
                     for nx, ny in self.get_neighbors(x, y):
                         neighbor = self.board[ny][nx]
                         if neighbor == "_":
-                            hidden_neighbors.append((nx, ny))
-                        elif neighbor == "F" or (nx, ny) in self.flagged_cells:
+                            # Check if it's flagged in flagged_cells (and still hidden)
+                            if (nx, ny) in self.flagged_cells:
+                                flagged_count += 1
+                            else:
+                                hidden_neighbors.append((nx, ny))
+                        elif neighbor == "F":
+                            # Flagged on board (and hidden)
                             flagged_count += 1
                     
                     # Only add constraint if there are hidden neighbors
@@ -130,8 +135,9 @@ class Phase4Solver:
         board_flags = sum(1 for y in range(self.height) 
                          for x in range(self.width) if self.board[y][x] == "F")
         # Also count flags in the flagged_cells set that might not be on board yet
+        # Only count if the cell is still hidden (not revealed)
         additional_flags = sum(1 for x, y in self.flagged_cells 
-                              if self.is_valid_coordinate(x, y) and self.board[y][x] != "F")
+                              if self.is_valid_coordinate(x, y) and self.board[y][x] == "_")
         total_flagged = board_flags + additional_flags
         return max(0, self.total_mines - total_flagged)
     
