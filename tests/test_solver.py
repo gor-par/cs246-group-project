@@ -215,9 +215,9 @@ def run_test():
 
     # Example game configuration
     # Modify these parameters as needed for your test case
-    width = 9
-    height = 9
-    mines = 10
+    width = 16
+    height = 16
+    mines = 40
     seed = 42  # For reproducibility
 
     print(f"Creating test game: {width}x{height}, {mines} mines, seed={seed}")

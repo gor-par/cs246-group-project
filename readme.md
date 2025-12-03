@@ -76,16 +76,22 @@ The solver uses a hierarchical approach with four distinct layers, each progress
 - Scans the board for pre-defined geometric patterns (defined in `helpers/patterns.py`)
 - Each pattern encodes a known configuration that guarantees certain cells are mines or safe
 - Patterns can be rotated (0°, 90°, 180°, 270°) and matched at any board position
-- When a pattern matches, it flags guaranteed mines and reveals guaranteed safe cells
+- **Pattern Validation**: Before applying deductions, validates that:
+  - All numbers in the pattern have the correct values and remaining mine counts
+  - The pattern's unopened cells are the **ONLY** unopened neighbors of the numbers involved
+  - This ensures the pattern logic is actually applicable, not just geometrically similar
+- **Prioritizes Safe Reveals**: Only acts when it can reveal safe tiles (100% certain)
+- If a pattern matches but can only flag mines (no safe tiles to reveal), returns "fail" to let Layer 3 try
+- When revealing safe tiles, also flags any guaranteed mines from the same pattern
 
 **Characteristics**:
-- Moderate computational cost (checks all patterns at all positions with all rotations)
+- Moderate computational cost (checks all patterns at all positions with all rotations, plus validation)
 - Handles multi-cell constraint relationships
-- 100% deterministic - patterns encode proven logical relationships
+- 100% deterministic - patterns encode proven logical relationships and are validated before use
 - More powerful than Layer 1 but still only acts with certainty
+- Conservative approach: defers to Layer 3 when it can only flag mines, allowing Layer 3's CSP approach to find safe tiles
 
 **Example patterns**: Corner patterns, edge patterns, sandwich patterns, and other geometric configurations where number relationships guarantee mine/safe positions.
-
 ---
 
 ### Layer 3: Advanced CSP with Connected Components

@@ -1,0 +1,56 @@
+================================================================================
+ITERATIVE TEST SUITE SUMMARY
+================================================================================
+
+Test Date: 2025-12-03 04:05:37
+Total Iterations: 10
+Game Configuration:
+  Width: 9
+  Height: 9
+  Mines: 10
+  Base Seed: 42
+  Seed Range: 42 to 51
+
+Solver Configuration:
+  Max Iterations: 10000
+  L4 Information Gain: False
+  L4 Safe Threshold: 0.35
+
+================================================================================
+RESULTS SUMMARY
+================================================================================
+
+Won: 10/10 (100.0%)
+Lost: 0/10 (0.0%)
+Unsolved: 0/10 (0.0%)
+
+Average Actions: 32.4
+Min Actions: 16
+Max Actions: 60
+
+Average Time: 0.01s
+Min Time: 0.00s
+Max Time: 0.03s
+
+================================================================================
+LAYER STATISTICS (Average across all tests)
+================================================================================
+
+Layer 1: 22.4 reveals, 9.3 flags, 31.7 total (average)
+Layer 3: 0.3 reveals, 0.1 flags, 0.4 total (average)
+Layer 4: 0.3 reveals, 0.0 flags, 0.3 total (average)
+
+================================================================================
+INDIVIDUAL TEST RESULTS
+================================================================================
+
+Test 001 (seed 42): Won - 35 actions, 0.02s
+Test 002 (seed 43): Won - 37 actions, 0.00s
+Test 003 (seed 44): Won - 60 actions, 0.01s
+Test 004 (seed 45): Won - 21 actions, 0.00s
+Test 005 (seed 46): Won - 16 actions, 0.00s
+Test 006 (seed 47): Won - 32 actions, 0.03s
+Test 007 (seed 48): Won - 45 actions, 0.01s
+Test 008 (seed 49): Won - 25 actions, 0.01s
+Test 009 (seed 50): Won - 32 actions, 0.01s
+Test 010 (seed 51): Won - 21 actions, 0.00s
